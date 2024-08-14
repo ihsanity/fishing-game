@@ -1,10 +1,15 @@
-import sys
 import math
 import random
 from enum import Enum
 
 
 starting_gold = 100
+
+# Today Data (global variables)
+current_gold = 100
+generated_fish_size, list_fish_by_size = [], []
+generated_fish_color, list_fish_by_color = [], []
+today_earnings = 0
 
 class FishSize(Enum):
     Small = 0
@@ -36,10 +41,7 @@ bait_prices = {
     FishColor.Green: 3,
 }
 
-pole_names = ["Small Fishing Pole", "Medium Fishing Pole", "Big Fishing Pole"]
-color_names = ["Red", "Blue", "Green"]
-bait_color_prices = [1, 2, 3]
-
+# nested array containing the price range for each fish size and color
 fish_price_matrix = [
     [[1, 5],   [3, 5],   [5, 5]],   # Small
     [[5, 10],  [8, 10],  [10, 10]], # Medium
@@ -57,7 +59,6 @@ fish_count_range = [12, 20]
 # applies to both fish size and colors
 occurrence_deviation = 2
 
-
 # function to generate a sequence containing {count} number of items with a sum of {total}
 def randomize_amount(total, count):
     remaining_sum = total
@@ -69,6 +70,7 @@ def randomize_amount(total, count):
     result.append(remaining_sum)
     return result
 
+# function to generate fish data based on the total number of fish, the number of fish variety, and the deviation
 def generate_fish_data(total, count, deviation):
     min_value = math.floor(total / count) - deviation
     undistributed = total - (min_value * count)
@@ -82,55 +84,40 @@ def generate_fish_data(total, count, deviation):
 
     return distributed_fish_data, fish_list
 
+# function to get the percentage of each item in a list of integers
 def get_percentage_from_int_list(list):
     result = []
     sum = 0
     for i in range(len(list)):
         sum += list[i]
-    for i in range(len(list) - 1):
-        result.append(round(list[i] * 100 / sum))
+    for i in range(len(list)):
+        result.append(round(list[i] * 100 / sum))    
     return result
 
-def simulate_fishing_day(fishlist_by_size, fishlist_by_color, pole, bait_list):
-    pass    
-
-
-if __name__ == "__main__":
+# generate fish data for a new day
+def generate_day():
+    global current_gold, generated_fish_size, generated_fish_color, list_fish_by_size, list_fish_by_color
+    current_gold = starting_gold
     total_fish = random.randint(*fish_count_range)
     generated_fish_size, list_fish_by_size = generate_fish_data(total_fish, len(pole_prices), occurrence_deviation)
     generated_fish_color, list_fish_by_color = generate_fish_data(total_fish, len(bait_prices), occurrence_deviation)
-
-    print(generated_fish_size)
-    print(generated_fish_color)
     random.shuffle(list_fish_by_color)
-    print(list_fish_by_size)
-    print(list_fish_by_color)
 
-    pole_choice = int(sys.argv[1])
-
+# calculate fishing result for the day given the day data and the bought fishing items
+def simulate_fishing_day(fishlist_by_size, fishlist_by_color, pole, bait_list):
+    global today_earnings
     catchable_fish_list = []
-    for i in range(total_fish):
-        if list_fish_by_size[i] == pole_choice:
-            fish = Fish(list_fish_by_size[i], list_fish_by_color[i])
+    for i in range(len(fishlist_by_size)):
+        if fishlist_by_size[i] == pole:
+            fish = Fish(fishlist_by_size[i], fishlist_by_color[i])
             catchable_fish_list.append(fish)
 
-    today_bait_list = [2, 3, 1]
-
-
-    print(pole_prices[FishSize(pole_choice)])
-    
-    current_gold = starting_gold - pole_prices[FishSize(pole_choice)] - 11
     today_earnings = 0
+    caught_fish_color = []
     for fish in catchable_fish_list:
-        print("Fish color : " + FishColor(fish.color).name + ", price : " + str(fish.price))
-        if today_bait_list[fish.color] > 0:
-            today_bait_list[fish.color] -= 1
-            print("CAUGHT!")
-            today_earnings += fish.price
-    print("today_earnings : ", today_earnings)
-    if current_gold + today_earnings > starting_gold:
-        print("YOU WIN!")
-    elif current_gold + today_earnings == starting_gold:
-        print("TIE...")
-    else:
-        print("YOU LOSE...")
+        if bait_list[fish.color] > 0:
+            bait_list[fish.color] -= 1
+            today_earnings += fish.price 
+            caught_fish_color.append(fish.color)
+    
+    return caught_fish_color
